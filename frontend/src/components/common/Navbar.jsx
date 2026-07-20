@@ -12,9 +12,12 @@ function Navbar() {
         color: "white",
       }}
     >
-      <Link 
+      <Link
         to="/"
-        style={{ color: "white", textDecoration: "none" }}
+        style={{
+          color: "white",
+          textDecoration: "none",
+        }}
       >
         <h2>Skill Exchange</h2>
       </Link>
