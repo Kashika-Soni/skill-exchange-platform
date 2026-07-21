@@ -1,37 +1,33 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
-function LandingPage() {
+export default function LandingPage() {
   return (
-    <main className="min-h-[90vh] flex items-center justify-center bg-gray-50">
-      <section className="max-w-3xl text-center px-6">
-        <h1 className="text-5xl md:text-6xl font-bold text-gray-800 leading-tight">
-          Learn.
-          <span className="text-blue-600"> Teach.</span>
-          Grow.
+    <div className="bg-gradient-to-b from-indigo-50 to-white min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center text-center px-4">
+      <div className="max-w-3xl mx-auto space-y-6">
+        <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1.5 rounded-full uppercase tracking-wider">
+          Peer-to-Peer Skill Sharing
+        </span>
+        <h1 className="text-4xl sm:text-6xl font-extrabold text-gray-900 tracking-tight">
+          Exchange Skills, <span className="text-indigo-600">Grow Together</span>
         </h1>
-
-        <p className="mt-6 text-lg text-gray-600">
-          Connect with people who share your passion for learning. Exchange
-          skills, collaborate with others, and grow together through meaningful
-          learning experiences.
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Connect with people who want to learn what you know, and teach what you want to learn. No money involved—just knowledge sharing.
         </p>
-
-        <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
-          <Link to="/register">
-            <button className="w-48 rounded-lg bg-blue-600 px-6 py-3 text-white font-semibold hover:bg-blue-700 transition">
-              Get Started
-            </button>
+        <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+          <Link
+            to="/register"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-medium shadow-md transition-colors text-lg"
+          >
+            Get Started Free
           </Link>
-
-          <Link to="/login">
-            <button className="w-48 rounded-lg border border-blue-600 px-6 py-3 text-blue-600 font-semibold hover:bg-blue-50 transition">
-              Login
-            </button>
+          <Link
+            to="/login"
+            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-8 py-3 rounded-lg font-medium transition-colors text-lg"
+          >
+            Log In
           </Link>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
-
-export default LandingPage;

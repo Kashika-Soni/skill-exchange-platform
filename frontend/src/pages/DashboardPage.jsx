@@ -1,134 +1,127 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { INITIAL_USERS } from '../utils/mockData';
 
-function DashboardPage() {
-  const navigate = useNavigate();
-  const [search, setSearch] = useState("");
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [requestedUsers, setRequestedUsers] = useState({});
 
-  const users = [
-  {
-    name: "Aditi",
-    teaches: "Python",
-    learns: "React",
-  },
-  {
-    name: "Kashika",
-    teaches: "UI/UX",
-    learns: "Machine Learning",
-  },
-  {
-    name: "Disha",
-    teaches: "Machine Learning",
-    learns: "UI/UX",
-  },
-  {
-    name: "Aastha",
-    teaches: "Node.js",
-    learns: "Data Science",
-  },
-  {
-    name: "Vriti",
-    teaches: "Data Science",
-    learns: "Node.js",
-  },
-  {
-    name: "Srishti",
-    teaches: "React",
-    learns: "Python",
-  },
-];
+  // Filter out the logged-in user
+  const profiles = INITIAL_USERS.filter((u) => u.id !== user?.id);
 
-  const filteredUsers = users.filter((user) =>
-    user.name.toLowerCase().includes(search.toLowerCase()) ||
-    user.teaches.toLowerCase().includes(search.toLowerCase()) ||
-    user.learns.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter based on search input (matches name, teach skills, or learn skills)
+  const filteredProfiles = profiles.filter((profile) => {
+    const term = searchTerm.toLowerCase();
+    const matchesName = profile.name.toLowerCase().includes(term);
+    const matchesTeach = profile.skillsToTeach.some((s) => s.toLowerCase().includes(term));
+    const matchesLearn = profile.skillsToLearn.some((s) => s.toLowerCase().includes(term));
+    return matchesName || matchesTeach || matchesLearn;
+  });
+
+  const handleSendRequest = (userId) => {
+    setRequestedUsers((prev) => ({ ...prev, [userId]: true }));
+  };
 
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
-      <div className="mx-auto max-w-6xl">
-        <h1 className="text-4xl font-bold text-gray-800">
-          Find Skill Partners
-        </h1>
-
-        <p className="mt-2 text-gray-600">
-          Search for people based on their skills and interests.
-        </p>
-
-        <input
-          type="text"
-          placeholder="Search by name or skill..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mt-6 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 focus:border-blue-500 focus:outline-none md:w-96"
-        />
-
-        {filteredUsers.length === 0 ? (
-          <div className="mt-12 rounded-xl bg-white p-8 text-center shadow">
-            <h2 className="text-xl font-semibold text-gray-700">
-              No users found
-            </h2>
-            <p className="mt-2 text-gray-500">
-              Try searching with a different name or skill.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredUsers.map((user, index) => (
-              <div
-                key={index}
-                className="rounded-2xl bg-white p-6 shadow-md transition hover:shadow-xl"
-              >
-                <div className="mb-4 flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white">
-                    {user.name.charAt(0)}
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800">
-                      {user.name}
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-600">
-                      Can Teach
-                    </p>
-
-                    <span className="mt-1 inline-block rounded-full bg-green-100 px-3 py-1 text-sm text-green-700">
-                      {user.teaches}
-                    </span>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-gray-600">
-                      Wants to Learn
-                    </p>
-
-                    <span className="mt-1 inline-block rounded-full bg-yellow-100 px-3 py-1 text-sm text-yellow-700">
-                      {user.learns}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-  onClick={() => {
-    console.log("Exchange request sent");
-    navigate("/inbox");
-  }}
-  className="mt-6 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
->
-  Send Exchange Request
-</button>
-              </div>
-            ))}
-          </div>
-        )}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header & Search */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Explore Matches</h1>
+          <p className="text-sm text-gray-600">Find people who want to swap skills with you</p>
+        </div>
+        <div className="w-full md:w-72">
+          <input
+            type="text"
+            placeholder="Search by skill or name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
       </div>
-    </main>
+
+      {/* Profiles Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredProfiles.map((profile) => (
+          <div
+            key={profile.id}
+            className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+          >
+            <div>
+              {/* Header: Avatar + Info */}
+              <div className="flex items-center space-x-4 mb-4">
+                <img
+                  src={profile.avatar}
+                  alt={profile.name}
+                  className="w-12 h-12 rounded-full object-cover border"
+                />
+                <div>
+                  <h3 className="font-semibold text-gray-900">{profile.name}</h3>
+                  <p className="text-xs text-gray-500">{profile.email}</p>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4 line-clamp-2">{profile.bio}</p>
+
+              {/* Skills Section */}
+              <div className="space-y-3 mb-6">
+                <div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+                    Can Teach:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {profile.skillsToTeach.map((skill) => (
+                      <span
+                        key={skill}
+                        className="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-md font-medium border border-emerald-100"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+                    Wants to Learn:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {profile.skillsToLearn.map((skill) => (
+                      <span
+                        key={skill}
+                        className="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-md font-medium border border-indigo-100"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <button
+              onClick={() => handleSendRequest(profile.id)}
+              disabled={requestedUsers[profile.id]}
+              className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                requestedUsers[profile.id]
+                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+              }`}
+            >
+              {requestedUsers[profile.id] ? 'Request Sent ✓' : 'Connect & Swap'}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {filteredProfiles.length === 0 && (
+        <div className="text-center py-12 text-gray-500">
+          No matching members found for "{searchTerm}".
+        </div>
+      )}
+    </div>
   );
 }
-
-export default DashboardPage;

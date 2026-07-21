@@ -1,92 +1,124 @@
-function InboxPage() {
-  const requests = [
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { INITIAL_USERS } from '../utils/mockData';
+
+export default function InboxPage() {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'active'
+
+  // Mock data for requests
+  const mockPendingRequests = [
     {
-      name: "Aditi",
-      skill: "Python",
-      status: "Pending",
+      id: 'req_1',
+      sender: INITIAL_USERS[1], // Sarah Chen
+      message: "Hey! I'd love to learn React from you. I can help you with Figma!",
+      status: 'pending',
     },
+  ];
+
+  const mockActiveConnections = [
     {
-      name: "Disha",
-      skill: "Machine Learning",
-      status: "Accepted",
-    },
-    {
-      name: "Aastha",
-      skill: "Node.js",
-      status: "Rejected",
+      id: 'conn_1',
+      partner: INITIAL_USERS[2], // Marcus Johnson
+      status: 'active',
+      startedAt: '2 days ago',
     },
   ];
 
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="text-4xl font-bold text-gray-800">
-          Skill Exchange Requests
-        </h1>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Your Inbox</h1>
 
-        <p className="mt-2 text-gray-600">
-          Manage your incoming and outgoing exchange requests.
-        </p>
-
-        <div className="mt-8 space-y-5">
-          {requests.map((request, index) => (
-            <div
-              key={index}
-              className="rounded-xl bg-white p-6 shadow-md"
-            >
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <div>
-                  <h2 className="text-xl font-semibold">
-                    {request.name}
-                  </h2>
-
-                  <p className="mt-1 text-gray-600">
-                    Requested skill:{" "}
-                    <span className="font-medium">
-                      {request.skill}
-                    </span>
-                  </p>
-
-                  <p className="mt-2">
-                    Status:
-                    <span
-                      className={`ml-2 rounded-full px-3 py-1 text-sm font-medium ${
-                        request.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : request.status === "Accepted"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {request.status}
-                    </span>
-                  </p>
-                </div>
-
-                {request.status === "Pending" && (
-                  <div className="flex gap-3">
-                    <button className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700">
-                      Accept
-                    </button>
-
-                    <button className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700">
-                      Reject
-                    </button>
-                  </div>
-                )}
-
-                {request.status === "Accepted" && (
-                  <button className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-                    Open Chat
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Tabs */}
+      <div className="flex space-x-4 border-b border-gray-200 mb-6">
+        <button
+          onClick={() => setActiveTab('pending')}
+          className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'pending'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          Pending Requests (1)
+        </button>
+        <button
+          onClick={() => setActiveTab('active')}
+          className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'active'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          Active Connections
+        </button>
       </div>
-    </main>
+
+      {/* Tab Content */}
+      <div className="space-y-4">
+        {activeTab === 'pending' && (
+          <>
+            {mockPendingRequests.map((req) => (
+              <div
+                key={req.id}
+                className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
+                <div className="flex items-start space-x-4">
+                  <img
+                    src={req.sender.avatar}
+                    alt={req.sender.name}
+                    className="w-12 h-12 rounded-full object-cover border"
+                  />
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      {req.sender.name} wants to connect
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1 italic">"{req.message}"</p>
+                    <div className="flex gap-2 mt-2">
+                      <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded">
+                        Offers: {req.sender.skillsToTeach[0]}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2 sm:flex-col">
+                  <button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-1.5 px-4 rounded-lg transition-colors">
+                    Accept
+                  </button>
+                  <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-1.5 px-4 rounded-lg transition-colors">
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {activeTab === 'active' && (
+          <>
+            {mockActiveConnections.map((conn) => (
+              <div
+                key={conn.id}
+                className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex items-center justify-between"
+              >
+                <div className="flex items-center space-x-4">
+                  <img
+                    src={conn.partner.avatar}
+                    alt={conn.partner.name}
+                    className="w-12 h-12 rounded-full object-cover border"
+                  />
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{conn.partner.name}</h3>
+                    <p className="text-sm text-gray-500">Connected {conn.startedAt}</p>
+                  </div>
+                </div>
+                <button className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium py-1.5 px-4 rounded-lg transition-colors">
+                  Message
+                </button>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
-
-export default InboxPage;
