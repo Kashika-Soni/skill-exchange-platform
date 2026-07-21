@@ -1,12 +1,32 @@
+const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
 const express = require("express");
 const cors = require("cors");
-const helmet = require("helmet");
 const morgan = require("morgan");
+
+const app = express();
+
+
+
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
+
+// Test Route
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "Skill Exchange Backend API is Running",
+  });
+});
+
+
+
+const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 
 const errorHandler = require("./middleware/errorMiddleware");
 
-const app = express();
+
 
 /* ===========================
    Security Middleware
