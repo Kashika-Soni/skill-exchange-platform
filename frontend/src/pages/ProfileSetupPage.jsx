@@ -1,8 +1,13 @@
+import { useNavigate } from "react-router-dom";
 function ProfileSetupPage() {
+  const navigate = useNavigate();
   function handleSubmit(e) {
-    e.preventDefault();
-    console.log("Profile saved");
-  }
+  e.preventDefault();
+
+  console.log("Profile saved");
+
+  navigate("/dashboard");
+}
 
   return (
     <main className="min-h-[90vh] bg-gray-100 py-10 px-4">

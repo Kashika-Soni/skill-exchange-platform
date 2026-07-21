@@ -1,8 +1,15 @@
+import { useNavigate } from "react-router-dom";
+import Button from "../components/ui/Button";
+
 function RegisterPage() {
+  const navigate = useNavigate();
   function handleSubmit(e) {
-    e.preventDefault();
-    console.log("Register clicked");
-  }
+  e.preventDefault();
+
+  console.log("Register clicked");
+
+  navigate("/profile");
+}
 
   return (
     <main className="min-h-[90vh] flex items-center justify-center bg-gray-100 px-4">
@@ -34,12 +41,9 @@ function RegisterPage() {
             className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none"
           />
 
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
-          >
-            Register
-          </button>
+          <Button type="submit">
+           Register
+          </Button>
         </form>
       </div>
     </main>

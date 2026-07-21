@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function DashboardPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   const users = [
@@ -111,9 +113,15 @@ function DashboardPage() {
                   </div>
                 </div>
 
-                <button className="mt-6 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700">
-                  Connect
-                </button>
+                <button
+  onClick={() => {
+    console.log("Exchange request sent");
+    navigate("/inbox");
+  }}
+  className="mt-6 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
+>
+  Send Exchange Request
+</button>
               </div>
             ))}
           </div>
