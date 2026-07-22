@@ -1,127 +1,221 @@
-import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { INITIAL_USERS } from '../utils/mockData';
+"use client"
 
-export default function DashboardPage() {
-  const { user } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [requestedUsers, setRequestedUsers] = useState({});
+import { useMemo, useState } from "react"
+import {
+  Check,
+  GraduationCap,
+  Lightbulb,
+  Search,
+  SlidersHorizontal,
+  UserPlus,
+} from "lucide-react"
 
-  // Filter out the logged-in user
-  const profiles = INITIAL_USERS.filter((u) => u.id !== user?.id);
+const PEOPLE = [
+  {
+    id: 1,
+    name: "Aditi",
+    title: "Product Designer",
+    location: "Austin, TX",
+    initials: "A",
+    avatarColor: "bg-blue-600",
+    teach: ["UI/UX Design", "Figma", "Illustration"],
+    learn: ["React", "TypeScript"],
+  },
+  {
+    id: 2,
+    name: "Kashika Soni",
+    title: "Frontend Engineer",
+    location: "Rohini, Delhi",
+    initials: "KS",
+    avatarColor: "bg-indigo-600",
+    teach: ["React", "TypeScript", "Node.js"],
+    learn: ["UI/UX Design", "Public Speaking"],
+  },
+  {
+    id: 3,
+    name: "Disha Kushwaha",
+    title: "Marketing Lead",
+    location: "Chicago, IL",
+    initials: "DK",
+    avatarColor: "bg-sky-600",
+    teach: ["Digital Marketing", "SEO", "Writing"],
+    learn: ["Data Analysis", "Excel"],
+  },
+  {
+    id: 4,
+    name: "Aastha Singh",
+    title: "Data Scientist",
+    location: "Boston, MA",
+    initials: "AS",
+    avatarColor: "bg-cyan-700",
+    teach: ["Python", "Machine Learning", "Data Analysis"],
+    learn: ["Guitar", "Spanish"],
+  },
+  {
+    id: 5,
+    name: "Vriti",
+    title: "Language Tutor",
+    location: "Denver, CO",
+    initials: "V",
+    avatarColor: "bg-blue-500",
+    teach: ["Spanish", "French", "Public Speaking"],
+    learn: ["Photography", "Video Editing"],
+  },
+]
 
-  // Filter based on search input (matches name, teach skills, or learn skills)
-  const filteredProfiles = profiles.filter((profile) => {
-    const term = searchTerm.toLowerCase();
-    const matchesName = profile.name.toLowerCase().includes(term);
-    const matchesTeach = profile.skillsToTeach.some((s) => s.toLowerCase().includes(term));
-    const matchesLearn = profile.skillsToLearn.some((s) => s.toLowerCase().includes(term));
-    return matchesName || matchesTeach || matchesLearn;
-  });
+export default function Dashboard() {
+  const [query, setQuery] = useState("")
+  const [requested, setRequested] = useState([])
 
-  const handleSendRequest = (userId) => {
-    setRequestedUsers((prev) => ({ ...prev, [userId]: true }));
-  };
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return PEOPLE
+    return PEOPLE.filter((p) => {
+      const haystack = [p.name, p.title, ...p.teach, ...p.learn]
+        .join(" ")
+        .toLowerCase()
+      return haystack.includes(q)
+    })
+  }, [query])
+
+  const toggleRequest = (id) => {
+    setRequested((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    )
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header & Search */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Explore Matches</h1>
-          <p className="text-sm text-gray-600">Find people who want to swap skills with you</p>
-        </div>
-        <div className="w-full md:w-72">
-          <input
-            type="text"
-            placeholder="Search by skill or name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        {/* Header */}
+        <header className="mb-6">
+          <p className="text-sm font-medium text-blue-600">Skill Exchange</p>
+          <h1 className="text-balance text-2xl font-bold text-slate-900 sm:text-3xl">
+            Suggested Skill Matches
+          </h1>
+          <p className="mt-1 text-sm leading-relaxed text-slate-500">
+            People whose skills align with what you want to learn and teach.
+          </p>
+        </header>
 
-      {/* Profiles Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProfiles.map((profile) => (
-          <div
-            key={profile.id}
-            className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
-          >
-            <div>
-              {/* Header: Avatar + Info */}
-              <div className="flex items-center space-x-4 mb-4">
-                <img
-                  src={profile.avatar}
-                  alt={profile.name}
-                  className="w-12 h-12 rounded-full object-cover border"
-                />
-                <div>
-                  <h3 className="font-semibold text-gray-900">{profile.name}</h3>
-                  <p className="text-xs text-gray-500">{profile.email}</p>
-                </div>
-              </div>
-
-              <p className="text-sm text-gray-600 mb-4 line-clamp-2">{profile.bio}</p>
-
-              {/* Skills Section */}
-              <div className="space-y-3 mb-6">
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                    Can Teach:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {profile.skillsToTeach.map((skill) => (
-                      <span
-                        key={skill}
-                        className="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-md font-medium border border-emerald-100"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                    Wants to Learn:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {profile.skillsToLearn.map((skill) => (
-                      <span
-                        key={skill}
-                        className="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-md font-medium border border-indigo-100"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Button */}
-            <button
-              onClick={() => handleSendRequest(profile.id)}
-              disabled={requestedUsers[profile.id]}
-              className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-                requestedUsers[profile.id]
-                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-              }`}
-            >
-              {requestedUsers[profile.id] ? 'Request Sent ✓' : 'Connect & Swap'}
-            </button>
+        {/* Search + Filter */}
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search skills or users..."
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
           </div>
-        ))}
-      </div>
-
-      {filteredProfiles.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          No matching members found for "{searchTerm}".
+          <button
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:text-blue-600"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters
+          </button>
         </div>
-      )}
+
+        {/* Grid */}
+        {filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
+            <p className="text-sm text-slate-500">
+              No matches found for &ldquo;{query}&rdquo;.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((person) => {
+              const isRequested = requested.includes(person.id)
+              return (
+                <article
+                  key={person.id}
+                  className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+                >
+                  {/* Top: avatar + name */}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${person.avatarColor}`}
+                    >
+                      {person.initials}
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="truncate font-semibold text-slate-900">
+                        {person.name}
+                      </h2>
+                      <p className="truncate text-xs text-slate-500">
+                        {person.title} &middot; {person.location}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Teach */}
+                  <div className="mt-4">
+                    <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                      <GraduationCap className="h-4 w-4 text-blue-600" />
+                      Can teach
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {person.teach.map((skill) => (
+                        <span
+                          key={skill}
+                          className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Learn */}
+                  <div className="mt-3">
+                    <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                      <Lightbulb className="h-4 w-4 text-slate-400" />
+                      Wants to learn
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {person.learn.map((skill) => (
+                        <span
+                          key={skill}
+                          className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action */}
+                  <button
+                    type="button"
+                    onClick={() => toggleRequest(person.id)}
+                    className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                      isRequested
+                        ? "bg-blue-50 text-blue-700"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    {isRequested ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Request Sent
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4" />
+                        Send Request
+                      </>
+                    )}
+                  </button>
+                </article>
+              )
+            })}
+          </div>
+        )}
+      </div>
     </div>
-  );
+  )
 }
