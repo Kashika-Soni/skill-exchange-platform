@@ -1,134 +1,159 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+"use client"
 
-function DashboardPage() {
-  const navigate = useNavigate();
-  const [search, setSearch] = useState("");
+import { useEffect, useMemo, useState } from "react"
+import MatchFilterBar from "../components/matches/MatchFilterBar"
+import MatchList from "../components/matches/MatchList"
+import Loader from "../components/common/Loader"
+import { getSuggestedMatches, getSentRequests, sendMatchRequest } from "../api/matchApi"
+import { mapUserToDisplayPerson } from "../utils/userDisplay"
 
-  const users = [
-  {
-    name: "Aditi",
-    teaches: "Python",
-    learns: "React",
-  },
-  {
-    name: "Kashika",
-    teaches: "UI/UX",
-    learns: "Machine Learning",
-  },
-  {
-    name: "Disha",
-    teaches: "Machine Learning",
-    learns: "UI/UX",
-  },
-  {
-    name: "Aastha",
-    teaches: "Node.js",
-    learns: "Data Science",
-  },
-  {
-    name: "Vriti",
-    teaches: "Data Science",
-    learns: "Node.js",
-  },
-  {
-    name: "Srishti",
-    teaches: "React",
-    learns: "Python",
-  },
-];
+export default function Dashboard() {
+  const [query, setQuery] = useState("")
+  const [people, setPeople] = useState([])
+  const [requested, setRequested] = useState(new Set())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [infoMessage, setInfoMessage] = useState(null)
 
-  const filteredUsers = users.filter((user) =>
-    user.name.toLowerCase().includes(search.toLowerCase()) ||
-    user.teaches.toLowerCase().includes(search.toLowerCase()) ||
-    user.learns.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadDashboardData() {
+      setLoading(true)
+      setError(null)
+
+      try {
+        // Fetch suggested matches and sent requests in parallel so we can
+        // mark people who already have a pending/accepted request as such.
+        const [matchesRes, sentRes] = await Promise.all([
+          getSuggestedMatches(),
+          getSentRequests(),
+        ])
+
+        if (cancelled) return
+
+        const mapped = (matchesRes.matches || []).map(mapUserToDisplayPerson)
+        const alreadyRequestedIds = new Set(
+          (sentRes.requests || []).map((r) => r.to.id),
+        )
+
+        setPeople(mapped)
+        setRequested(alreadyRequestedIds)
+
+        if (matchesRes.message) {
+          setInfoMessage(matchesRes.message)
+        }
+      } catch (err) {
+        if (cancelled) return
+        setError(
+          err?.response?.data?.message ||
+            "Couldn't load suggested matches. Please try again.",
+        )
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadDashboardData()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+
+    if (!q) return people
+
+    return people.filter((p) => {
+      const haystack = [p.name, p.title, ...p.teach, ...p.learn]
+        .join(" ")
+        .toLowerCase()
+
+      return haystack.includes(q)
+    })
+  }, [people, query])
+
+  const toggleRequest = async (id) => {
+    // Already sent -> nothing to do here (button is disabled once requested)
+    if (requested.has(id)) return
+
+    // Optimistically mark as requested so the button updates immediately
+    setRequested((prev) => new Set(prev).add(id))
+
+    try {
+      await sendMatchRequest(id)
+    } catch (err) {
+      const status = err?.response?.status
+
+      // 409 = request already exists server-side; treat as success, not an error
+      if (status !== 409) {
+        // Roll back the optimistic update on real failures
+        setRequested((prev) => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+        setError(
+          err?.response?.data?.message ||
+            "Couldn't send that request. Please try again.",
+        )
+      }
+    }
+  }
 
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
-      <div className="mx-auto max-w-6xl">
-        <h1 className="text-4xl font-bold text-gray-800">
-          Find Skill Partners
-        </h1>
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
-        <p className="mt-2 text-gray-600">
-          Search for people based on their skills and interests.
-        </p>
+        {/* Header */}
+        <div className="mb-8">
+          <p className="mb-2 text-sm font-medium text-blue-600">
+            Skill Exchange
+          </p>
 
-        <input
-          type="text"
-          placeholder="Search by name or skill..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mt-6 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 focus:border-blue-500 focus:outline-none md:w-96"
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            Suggested Skill Matches
+          </h1>
+
+          <p className="mt-2 text-sm text-slate-500">
+            People whose skills align with what you want to learn and teach.
+          </p>
+        </div>
+
+        {/* Search + Filter */}
+        <MatchFilterBar
+          query={query}
+          setQuery={setQuery}
         />
 
-        {filteredUsers.length === 0 ? (
-          <div className="mt-12 rounded-xl bg-white p-8 text-center shadow">
-            <h2 className="text-xl font-semibold text-gray-700">
-              No users found
-            </h2>
-            <p className="mt-2 text-gray-500">
-              Try searching with a different name or skill.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredUsers.map((user, index) => (
-              <div
-                key={index}
-                className="rounded-2xl bg-white p-6 shadow-md transition hover:shadow-xl"
-              >
-                <div className="mb-4 flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white">
-                    {user.name.charAt(0)}
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800">
-                      {user.name}
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-600">
-                      Can Teach
-                    </p>
-
-                    <span className="mt-1 inline-block rounded-full bg-green-100 px-3 py-1 text-sm text-green-700">
-                      {user.teaches}
-                    </span>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-gray-600">
-                      Wants to Learn
-                    </p>
-
-                    <span className="mt-1 inline-block rounded-full bg-yellow-100 px-3 py-1 text-sm text-yellow-700">
-                      {user.learns}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-  onClick={() => {
-    console.log("Exchange request sent");
-    navigate("/inbox");
-  }}
-  className="mt-6 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
->
-  Send Exchange Request
-</button>
-              </div>
-            ))}
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
           </div>
         )}
-      </div>
-    </main>
-  );
-}
 
-export default DashboardPage;
+        {infoMessage && !loading && people.length === 0 && !error && (
+          <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            {infoMessage}
+          </div>
+        )}
+
+        {/* Matches */}
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader />
+          </div>
+        ) : (
+          <MatchList
+            filtered={filtered}
+            requested={Array.from(requested)}
+            toggleRequest={toggleRequest}
+          />
+        )}
+
+      </div>
+    </div>
+  )
+}

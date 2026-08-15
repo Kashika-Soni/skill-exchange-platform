@@ -1,92 +1,188 @@
-function InboxPage() {
-  const requests = [
-    {
-      name: "Aditi",
-      skill: "Python",
-      status: "Pending",
-    },
-    {
-      name: "Disha",
-      skill: "Machine Learning",
-      status: "Accepted",
-    },
-    {
-      name: "Aastha",
-      skill: "Node.js",
-      status: "Rejected",
-    },
-  ];
+"use client"
 
-  return (
-    <main className="min-h-screen bg-gray-100 px-6 py-10">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="text-4xl font-bold text-gray-800">
-          Skill Exchange Requests
-        </h1>
+import { useEffect, useMemo, useState } from "react"
+import { Clock } from "lucide-react"
 
-        <p className="mt-2 text-gray-600">
-          Manage your incoming and outgoing exchange requests.
-        </p>
+import RequestCard from "../components/inbox/RequestCard"
+import RequestTabs from "../components/inbox/RequestTabs"
+import ChatWindow from "../components/messages/ChatWindow"
+import Loader from "../components/common/Loader"
+import { getInboxRequests, respondToRequest } from "../api/matchApi"
+import { mapUserToDisplayPerson } from "../utils/userDisplay"
 
-        <div className="mt-8 space-y-5">
-          {requests.map((request, index) => (
-            <div
-              key={index}
-              className="rounded-xl bg-white p-6 shadow-md"
-            >
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <div>
-                  <h2 className="text-xl font-semibold">
-                    {request.name}
-                  </h2>
+const TABS = [
+  { key: "pending", label: "Pending" },
+  { key: "accepted", label: "Accepted" },
+  { key: "declined", label: "Declined" },
+]
 
-                  <p className="mt-1 text-gray-600">
-                    Requested skill:{" "}
-                    <span className="font-medium">
-                      {request.skill}
-                    </span>
-                  </p>
-
-                  <p className="mt-2">
-                    Status:
-                    <span
-                      className={`ml-2 rounded-full px-3 py-1 text-sm font-medium ${
-                        request.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : request.status === "Accepted"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {request.status}
-                    </span>
-                  </p>
-                </div>
-
-                {request.status === "Pending" && (
-                  <div className="flex gap-3">
-                    <button className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700">
-                      Accept
-                    </button>
-
-                    <button className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700">
-                      Reject
-                    </button>
-                  </div>
-                )}
-
-                {request.status === "Accepted" && (
-                  <button className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-                    Open Chat
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </main>
-  );
+// Merges the Request document (id, status) with the display shape derived
+// from the requester's user profile (name, initials, teach/learn, etc).
+function mapRequestToCardData(request) {
+  return {
+    ...mapUserToDisplayPerson(request.from),
+    id: request.id,
+    userId: request.from.id,
+    status: request.status,
+  }
 }
 
-export default InboxPage;
+export default function Inbox() {
+  const [requests, setRequests] = useState([])
+  const [activeTab, setActiveTab] = useState("pending")
+  const [chatPerson, setChatPerson] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [actionError, setActionError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadInbox() {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const res = await getInboxRequests()
+        if (cancelled) return
+        setRequests((res.requests || []).map(mapRequestToCardData))
+      } catch (err) {
+        if (cancelled) return
+        setError(
+          err?.response?.data?.message ||
+            "Couldn't load your inbox. Please try again.",
+        )
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadInbox()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const counts = useMemo(() => {
+    return requests.reduce(
+      (acc, r) => {
+        acc[r.status] += 1
+        return acc
+      },
+      { pending: 0, accepted: 0, declined: 0 },
+    )
+  }, [requests])
+
+  const visible = useMemo(
+    () => requests.filter((r) => r.status === activeTab),
+    [requests, activeTab],
+  )
+
+  const updateStatus = async (id, status) => {
+    setActionError(null)
+
+    // Keep the previous state around so we can roll back on failure
+    const previous = requests
+
+    setRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status } : r)),
+    )
+
+    try {
+      await respondToRequest(id, status)
+    } catch (err) {
+      setRequests(previous)
+      setActionError(
+        err?.response?.data?.message ||
+          "Couldn't update that request. Please try again.",
+      )
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            Inbox
+          </h1>
+
+          <p className="mt-2 text-sm text-slate-500">
+            Manage your skill exchange requests.
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <RequestTabs
+          tabs={TABS}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          counts={counts}
+        />
+
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {actionError && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {actionError}
+          </div>
+        )}
+
+        {/* Cards */}
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader />
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
+            <Clock className="mx-auto mb-3 h-8 w-8 text-slate-300" />
+
+            <p className="text-sm text-slate-500">
+              No {activeTab} requests right now.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {visible.map((req) => (
+              <RequestCard
+                key={req.id}
+                req={req}
+                updateStatus={updateStatus}
+                onMessage={(person) => setChatPerson(person)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Real-time chat wiring lands in Phase 3 — ChatWindow still sends
+            to a console.log stub until messageApi.js exists. */}
+        {chatPerson && (
+          <ChatWindow
+            conversation={{
+              person: {
+                id: chatPerson.userId,
+                name: chatPerson.name,
+                role: chatPerson.title,
+                avatar: chatPerson.initials,
+                color: chatPerson.avatarColor,
+                online: false,
+              },
+              messages: [],
+            }}
+            onBack={() => setChatPerson(null)}
+            onSend={(text, person) => {
+              console.log("Message:", text, "to:", person)
+            }}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
